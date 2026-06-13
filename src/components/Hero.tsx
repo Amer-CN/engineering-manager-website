@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { ChevronDown, Download } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { useThemeContext } from '../contexts/ThemeContext'
 import Logo from './Logo'
 import BlurText from './reactbits/BlurText'
@@ -16,7 +16,7 @@ function getMaskColor(theme: string): string {
 function Typewriter({ text, delay = 55, startDelay = 350 }: {
   text: string; delay?: number; startDelay?: number
 }) {
-  const ref = useRef<HTMLSpanElement>(null)
+  const ref = useRef<HTMLParagraphElement>(null)
 
   useEffect(() => {
     const el = ref.current
@@ -103,6 +103,7 @@ export default function Hero() {
     let h = 0
 
     function resize() {
+      if (!hero || !canvas || !ctx) return
       const rect = hero.getBoundingClientRect()
       w = rect.width
       h = rect.height

@@ -32,7 +32,7 @@ const features: Feature[] = [
 const container = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
 const item = {
   hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' as const } },
 }
 
 export default function Features() {

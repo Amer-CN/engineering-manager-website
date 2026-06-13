@@ -127,7 +127,7 @@ export default function Download() {
               <span>系统要求</span>
             </div>
             <div className="requirements-list">
-              {requirements.map((req, i) => (
+              {requirements.map((req) => (
                 <div key={req.label} className="requirements-row">
                   <span className="requirements-label">{req.label}</span>
                   <span className="requirements-value">{req.value}</span>
