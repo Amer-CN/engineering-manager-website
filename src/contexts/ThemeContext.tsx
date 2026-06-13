@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import type { ThemeId } from './useTheme'
+
+export type ThemeId = 'white' | 'graphite' | 'sandstone'
 
 interface ThemeContextValue {
   theme: ThemeId
