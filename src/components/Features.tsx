@@ -26,7 +26,7 @@ const features: Feature[] = [
   { icon: Package, title: '仓库管理', desc: '物料库管理、出入库登记、项目材料关联，库存实时可查。', accent: 'var(--color-pink)' },
   { icon: Building2, title: '单位管理', desc: '合作单位+监管单位管理，建立企业合作信息库。', accent: 'var(--color-slate)' },
   { icon: ShieldCheck, title: 'AI 数据守护', desc: '本地化数据守护引擎，自动备份/恢复/审计，零云端泄露风险，数据完全自主可控。', accent: 'var(--color-emerald)', status: 'live' },
-  { icon: Bot, title: 'AI 助手', desc: '智能问答、报表自动生成、风险预警、决策建议，让 AI 替你处理繁琐数据。', accent: 'var(--color-indigo)', status: 'coming' },
+  { icon: Bot, title: 'AI 助手', desc: '智能问答、报表自动生成、风险预警、决策建议，让 AI 替你处理繁琐数据。', accent: 'var(--color-indigo)', status: 'live' },
 ]
 
 const container = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
