@@ -457,7 +457,8 @@ export default function Download() {
             padding: 24px;
           }
           .cl-modal {
-            background: var(--bg-card);
+            background: var(--bg);
+            backdrop-filter: none;
             border: 1px solid var(--border);
             border-radius: 20px;
             width: 100%;
@@ -467,6 +468,7 @@ export default function Download() {
             flex-direction: column;
             overflow: hidden;
             box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+            backdrop-filter: none;
           }
           .cl-header {
             display: flex;
