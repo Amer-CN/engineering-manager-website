@@ -9,7 +9,7 @@ const CHANGELOG_URL = 'https://raw.githubusercontent.com/Amer-CN/engineering-man
 const mirrorUrl = 'https://cloud.189.cn/web/share?code=jUjM73RJRbUv'
 const mirrorUrl2 = 'https://1821605241.share.123865.com/123pan/uSpfjv-LWVVv'
 
-const FALLBACK_VERSION = 'v0.70.0'
+const FALLBACK_VERSION = 'v0.81.7'
 const FALLBACK_SIZE = 198
 
 const requirements = [
@@ -24,13 +24,18 @@ interface ReleaseInfo {
   version: string
   downloadUrl: string
   sizeMB: number
-  changelogUrl: string
+}
+
+interface ChangelogGroup {
+  label: string
+  items: string[]
 }
 
 interface ChangelogVersion {
   v: string
   date: string
-  items: string[]
+  items?: string[]
+  groups?: ChangelogGroup[]
 }
 
 function useLatestRelease() {
@@ -44,26 +49,38 @@ function useLatestRelease() {
         return res.json()
       })
       .then(data => {
-        const asset = data.assets?.[0]
+        const asset = data.assets?.find((a: { name?: string }) => a.name?.endsWith('.exe'))
         setRelease({
           version: data.tag_name,
           downloadUrl: asset?.browser_download_url || `${GITHUB_REPO}/releases/latest`,
           sizeMB: asset?.size ? Math.round(asset.size / 1024 / 1024) : FALLBACK_SIZE,
-          changelogUrl: `${GITHUB_REPO}/releases/tag/${data.tag_name}`,
         })
       })
       .catch(() => {
-        setRelease({
-          version: FALLBACK_VERSION,
-          downloadUrl: `${GITHUB_REPO}/releases/download/${FALLBACK_VERSION}/${FALLBACK_VERSION}.exe`,
-          sizeMB: FALLBACK_SIZE,
-          changelogUrl: `${GITHUB_REPO}/releases/tag/${FALLBACK_VERSION}`,
-        })
+        setRelease(null)
       })
       .finally(() => setLoading(false))
   }, [])
 
   return { release, loading }
+}
+
+/**
+ * 解析 changelog.ts 文件内容，提取版本数组。
+ * 文件来自用户自己的 GitHub 仓库，内容可信，使用 Function 构造器解析。
+ * 同时兼容旧版 items 格式和新版 groups 分组格式。
+ */
+function parseChangelog(text: string): ChangelogVersion[] {
+  try {
+    const match = text.match(/versions[\s\S]*?=\s*(\[[\s\S]*\])/)
+    if (match) {
+      const parsed = new Function(`return ${match[1]}`)()
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch (e) {
+    console.error('Failed to parse changelog:', e)
+  }
+  return []
 }
 
 function useChangelog() {
@@ -77,22 +94,7 @@ function useChangelog() {
         return res.text()
       })
       .then(text => {
-        const parsed: ChangelogVersion[] = []
-        const regex = /\{\s*v:\s*'([^']+)',\s*date:\s*'([^']+)',\s*items:\s*\[([\s\S]*?)\]\s*\}/g
-        let match: RegExpExecArray | null
-        while ((match = regex.exec(text)) !== null) {
-          const v = match[1]
-          const date = match[2]
-          const itemsBlock = match[3]
-          const items: string[] = []
-          const itemRegex = /'([^']+)'/g
-          let itemMatch: RegExpExecArray | null
-          while ((itemMatch = itemRegex.exec(itemsBlock)) !== null) {
-            items.push(itemMatch[1])
-          }
-          parsed.push({ v, date, items })
-        }
-        setVersions(parsed)
+        setVersions(parseChangelog(text))
       })
       .catch(() => setVersions([]))
       .finally(() => setLoading(false))
@@ -168,11 +170,26 @@ function ChangelogModal({ open, onClose, versions, loading }: {
                       />
                     </button>
                     {expanded.has(item.v) && (
-                      <ul className="cl-items">
-                        {item.items.map((text, i) => (
-                          <li key={i}>{text}</li>
-                        ))}
-                      </ul>
+                      <div className="cl-version-body">
+                        {item.groups ? (
+                          item.groups.map((group, gi) => (
+                            <div key={gi} className="cl-group">
+                              <div className="cl-group-label">{group.label}</div>
+                              <ul className="cl-items">
+                                {group.items.map((text, i) => (
+                                  <li key={i}>{text}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))
+                        ) : (
+                          <ul className="cl-items">
+                            {item.items?.map((text, i) => (
+                              <li key={i}>{text}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))
@@ -190,7 +207,7 @@ export default function Download() {
   const { versions, loading: changelogLoading } = useChangelog()
   const [changelogOpen, setChangelogOpen] = useState(false)
 
-  const version = release?.version || FALLBACK_VERSION
+  const version = release?.version || versions[0]?.v || FALLBACK_VERSION
   const downloadUrl = release?.downloadUrl || '#'
   const sizeMB = release?.sizeMB || FALLBACK_SIZE
 
@@ -246,7 +263,7 @@ export default function Download() {
                 </a>
               )}
               <div className="download-links">
-                <a href={release?.changelogUrl || `${GITHUB_REPO}/releases/tag/${FALLBACK_VERSION}`} target="_blank" rel="noopener noreferrer" className="download-link">
+                <a href={`${GITHUB_REPO}/releases`} target="_blank" rel="noopener noreferrer" className="download-link">
                   <GitBranch size={13} /> GitHub Releases
                 </a>
                 <button onClick={() => setChangelogOpen(true)} className="download-link download-link--btn">
@@ -547,9 +564,25 @@ export default function Download() {
             font-size: 12px;
             color: var(--text-muted);
           }
+          .cl-version-body {
+            padding-bottom: 14px;
+          }
+          .cl-group {
+            padding: 0 24px;
+          }
+          .cl-group + .cl-group {
+            margin-top: 8px;
+          }
+          .cl-group-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            padding-left: 0;
+          }
           .cl-items {
             margin: 0;
-            padding: 0 24px 14px 24px;
+            padding: 0 0 0 16px;
             list-style: none;
           }
           .cl-items li {
