@@ -4,13 +4,17 @@ import { Download as DownloadIcon, ExternalLink, FileCode, Package, Shield, Cpu,
 
 const GITHUB_REPO = 'https://github.com/Amer-CN/engineering-manager'
 const RELEASE_API = 'https://api.github.com/repos/Amer-CN/engineering-manager/releases/latest'
-const CHANGELOG_URL = 'https://raw.githubusercontent.com/Amer-CN/engineering-manager/master/src/constants/changelog.ts'
+// jsDelivr CDN 在国内有节点，raw.githubusercontent.com 国内被墙
+const CHANGELOG_URLS = [
+  'https://cdn.jsdelivr.net/gh/Amer-CN/engineering-manager@master/src/constants/changelog.ts',
+  'https://fastly.jsdelivr.net/gh/Amer-CN/engineering-manager@master/src/constants/changelog.ts',
+  'https://raw.githubusercontent.com/Amer-CN/engineering-manager/master/src/constants/changelog.ts',
+]
 
 const mirrorUrl = 'https://cloud.189.cn/web/share?code=jUjM73RJRbUv'
 const mirrorUrl2 = 'https://1821605241.share.123865.com/123pan/uSpfjv-LWVVv'
 
 const FALLBACK_VERSION = 'v0.81.7'
-const FALLBACK_SIZE = 198
 
 const requirements = [
   { label: '操作系统', value: 'Windows 10 1809+ / Windows 11' },
@@ -23,7 +27,7 @@ const requirements = [
 interface ReleaseInfo {
   version: string
   downloadUrl: string
-  sizeMB: number
+  sizeMB: number | null
 }
 
 interface ChangelogGroup {
@@ -53,7 +57,7 @@ function useLatestRelease() {
         setRelease({
           version: data.tag_name,
           downloadUrl: asset?.browser_download_url || `${GITHUB_REPO}/releases/latest`,
-          sizeMB: asset?.size ? Math.round(asset.size / 1024 / 1024) : FALLBACK_SIZE,
+          sizeMB: asset?.size ? Math.round(asset.size / 1024 / 1024) : null,
         })
       })
       .catch(() => {
@@ -83,12 +87,19 @@ function parseChangelog(text: string): ChangelogVersion[] {
   return []
 }
 
+function fetchWithFallback(urls: string[]): Promise<Response> {
+  return urls.reduce(
+    (prev, url) => prev.catch(() => fetch(url)),
+    Promise.reject(new Error('No URLs'))
+  )
+}
+
 function useChangelog() {
   const [versions, setVersions] = useState<ChangelogVersion[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(CHANGELOG_URL)
+    fetchWithFallback(CHANGELOG_URLS)
       .then(res => {
         if (!res.ok) throw new Error('Changelog fetch error')
         return res.text()
@@ -208,8 +219,10 @@ export default function Download() {
   const [changelogOpen, setChangelogOpen] = useState(false)
 
   const version = release?.version || versions[0]?.v || FALLBACK_VERSION
-  const downloadUrl = release?.downloadUrl || '#'
-  const sizeMB = release?.sizeMB || FALLBACK_SIZE
+  const versionNoV = version.replace(/^v/, '')
+  const downloadUrl = release?.downloadUrl
+    || `${GITHUB_REPO}/releases/download/${version}/EngineeringManager-Setup-${versionNoV}.exe`
+  const sizeMB = release?.sizeMB ?? null
 
   return (
     <>
@@ -250,7 +263,7 @@ export default function Download() {
                 style={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}
               >
                 <DownloadIcon size={18} />
-                下载安装包（~{sizeMB}MB）
+                下载安装包{sizeMB ? `（~${sizeMB}MB）` : ''}
               </a>
               {mirrorUrl && (
                 <a href={mirrorUrl} target="_blank" rel="noopener noreferrer" className="download-mirror">
