@@ -4,6 +4,8 @@ import { Download as DownloadIcon, ExternalLink, FileCode, Package, Shield, Cpu,
 
 const GITHUB_REPO = 'https://github.com/Amer-CN/engineering-manager'
 const RELEASE_API = 'https://api.github.com/repos/Amer-CN/engineering-manager/releases/latest'
+// GitHub PAT（公开仓库只读），提升 API 速率限制从 60→5000 次/小时
+const GITHUB_TOKEN = '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'
 // jsDelivr CDN 在国内有节点，raw.githubusercontent.com 国内被墙
 const CHANGELOG_URLS = [
   'https://cdn.jsdelivr.net/gh/Amer-CN/engineering-manager@master/src/constants/changelog.ts',
@@ -47,7 +49,9 @@ function useLatestRelease() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(RELEASE_API)
+    fetch(RELEASE_API, {
+      headers: { Authorization: `Bearer ${GITHUB_TOKEN}` },
+    })
       .then(res => {
         if (!res.ok) throw new Error('GitHub API error')
         return res.json()
