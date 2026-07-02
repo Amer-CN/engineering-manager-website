@@ -4,8 +4,9 @@ import { Download as DownloadIcon, ExternalLink, FileCode, Package, Shield, Cpu,
 
 const GITHUB_REPO = 'https://github.com/Amer-CN/engineering-manager'
 const RELEASE_API = 'https://api.github.com/repos/Amer-CN/engineering-manager/releases/latest'
-// GitHub PAT（公开仓库只读），提升 API 速率限制从 60→5000 次/小时
-const GITHUB_TOKEN = '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'
+// GitHub PAT 通过环境变量注入（Cloudflare Pages 构建时注入），不进 git 仓库
+// 提升 API 速率限制从 60→5000 次/小时，获取真实文件大小
+const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN || ''
 // jsDelivr CDN 在国内有节点，raw.githubusercontent.com 国内被墙
 const CHANGELOG_URLS = [
   'https://cdn.jsdelivr.net/gh/Amer-CN/engineering-manager@master/src/constants/changelog.ts',
@@ -49,9 +50,9 @@ function useLatestRelease() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(RELEASE_API, {
-      headers: { Authorization: `Bearer ${GITHUB_TOKEN}` },
-    })
+    const headers: Record<string, string> = {}
+    if (GITHUB_TOKEN) headers.Authorization = `Bearer ${GITHUB_TOKEN}`
+    fetch(RELEASE_API, { headers })
       .then(res => {
         if (!res.ok) throw new Error('GitHub API error')
         return res.json()
